@@ -8,6 +8,7 @@ import os, sys
 import logging
 import getopt
 
+import numpy as np
 import json
 import csv
 import owslib.wfs
@@ -15,6 +16,7 @@ import owslib.fes
 from owslib.etree import etree
 
 from ogc_filter.filter import OgcFilter
+from enums.enums import Properties
 
 KADASTRS = 'kadastrs'
 KVARTALS = 'kvart'
@@ -69,6 +71,8 @@ def main(argv):
 
     # Generate MKL and metadata info
     extract_data(wfs)
+
+    logger.info(f'File generation finished succesfully')
 
     
 def setup_wfs():
@@ -132,6 +136,10 @@ def process_csv(filename):
 def extract_data(wfs):
     layer_name = 'publicwfs:vmdpubliccompartments'
     filter_gen = OgcFilter()
+
+    list_of_properties = ['ogc_fid', 'kadastrs', 'kvart', 'nog', 'anog', 'nog_plat', 'expl_mezs',
+                  'expl_celi', 'expl_gravj', 'zkat', 'mt', 'izc', 'p_darbg', 'p_darbv',
+                  'p_cirg', 'p_cirp', 'atj_gads']
     
     for row in rows:
         filter = filter_gen.generate_filter(row[0], row[1], row[2])
@@ -165,8 +173,28 @@ def extract_data(wfs):
 
         logger.debug(res['features'][0]['geometry'])
 
-        with open(doc_name+'/'+doc_name+'.txt', 'w') as outfile:
+        with open(doc_name+'/'+doc_name+'_coordinates.txt', 'w') as outfile:
             outfile.write(str(res['features'][0]['geometry']))
+        
+        arr = np.array(res['features'][0]['geometry']['coordinates'])
+        print(f'Array size: {arr.data}')
+        print(f'Array size: {arr.shape}')
+        print(f'Array size: {arr.shape[0]}')
+        arr = arr.reshape(7, 2)
+        print(arr[:2])
+        
+        # Extract metadata info
+        properties = res['features'][0]['properties']
+
+        with open(doc_name+'/'+doc_name+'_metainfo.txt', 'w', encoding='utf-8') as outfile:
+            for i in list_of_properties:
+                prop = getattr(Properties, i)
+                outfile.write(prop.long_name + str(': '))
+                if (not i in properties):
+                    logger.warning(f'Could not find "{i}" properties in WFS response!')
+                else:
+                    outfile.write(str(properties[i]))
+                outfile.write('\n')
             
 
 
