@@ -15,6 +15,7 @@ import owslib.fes
 from owslib.etree import etree
 
 from ogc_filter.filter import OgcFilter
+from enums.enums import Properties
 
 KADASTRS = 'kadastrs'
 KVARTALS = 'kvart'
@@ -28,7 +29,7 @@ rows = []
 
 # Set up logging system
 logger = logging.getLogger('main')
-logging.basicConfig(format='%(name)s:%(levelname)s:%(message)s', stream=sys.stderr ,level = logging.INFO)
+logging.basicConfig(format='%(name)s:%(levelname)s:%(message)s', stream=sys.stderr ,level = logging.DEBUG)
 
 
 
@@ -69,6 +70,8 @@ def main(argv):
 
     # Generate MKL and metadata info
     extract_data(wfs)
+
+    logger.info(f'File generation finished succesfully')
 
     
 def setup_wfs():
@@ -132,6 +135,10 @@ def process_csv(filename):
 def extract_data(wfs):
     layer_name = 'publicwfs:vmdpubliccompartments'
     filter_gen = OgcFilter()
+
+    list_of_properties = ['ogc_fid', 'kadastrs', 'kvart', 'nog', 'anog', 'nog_plat', 'expl_mezs',
+                  'expl_celi', 'expl_gravj', 'zkat', 'mt', 'izc', 'p_darbg', 'p_darbv',
+                  'p_cirg', 'p_cirp', 'atj_gads']
     
     for row in rows:
         filter = filter_gen.generate_filter(row[0], row[1], row[2])
@@ -165,10 +172,29 @@ def extract_data(wfs):
 
         logger.debug(res['features'][0]['geometry'])
 
-        with open(doc_name+'/'+doc_name+'.txt', 'w') as outfile:
+        with open(doc_name+'/'+doc_name+'_coordinates.txt', 'w') as outfile:
             outfile.write(str(res['features'][0]['geometry']))
+        
+        # Extract metadata info
+        properties = res['features'][0]['properties']
+
+        with open(doc_name+'/'+doc_name+'_metainfo.txt', 'w', encoding='utf-8') as outfile:
+            for i in list_of_properties:
+                prop = getattr(Properties, i)
+                outfile.write(prop.long_name + str(': '))
+                outfile.write(str(properties[i]))
+                outfile.write('\n')
             
 
 
 if __name__ == '__main__':
     main(sys.argv)
+
+    # properties = ['ogc_fid', 'kadastrs', 'kvart', 'nog', 'anog', 'nog_plat', 'expl_mezs',
+    #               'expl_celi', 'expl_gravj', 'zkat', 'mt', 'izc', 'p_darbg', 'p_darbv',
+    #               'p_cirg', 'p_cirp', 'atj_gads']
+    
+    # for i in properties:
+    #     prop = getattr(Properties, i)
+    #     print(prop.long_name)
+    #     print(prop.coded_value)
