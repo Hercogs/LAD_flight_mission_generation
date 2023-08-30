@@ -14,10 +14,10 @@ class Properties(Enum):
     mt          = ('Augšanas apstākļu tips',                            True)
     izc         = ('Mežaudzes izcelsme',                                True)
     p_darbg     = ('Pēdējās saimnieciskās darbības gads',               False)
-    p_darbv     = ('Pēdējās saimnieciskās darbības veids',         True)
-    p_cirg      = ('Pēdējās ciršanas gads',         False)
-    p_cirp      = ('Pēdējās ciršanas paņēmiens',         True)
-    atj_gads    = ('Atjaunošanas beigu termiņš',         False)
+    p_darbv     = ('Pēdējās saimnieciskās darbības veids',              True)
+    p_cirg      = ('Pēdējās ciršanas gads',                             False)
+    p_cirp      = ('Pēdējās ciršanas paņēmiens',                        True)
+    atj_gads    = ('Atjaunošanas beigu termiņš',                        False)
     
     # Not implemented following features
     # TODO
@@ -84,12 +84,9 @@ class CodedValues(Enum):
 
     def __init__(self, description):
         self.description = description
-# a = Unit.ogc_fid
 
-# print(a.value)
-# print(a.long_name)
-# print(a.symbol)
 
 if __name__ == '__main__':
-    x = getattr(Properties, 'anog')
-    print(x.long_name)
+    pass
+    # x = getattr(Properties, 'anog')
+    # print(x.long_name)

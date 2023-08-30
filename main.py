@@ -29,7 +29,7 @@ rows = []
 
 # Set up logging system
 logger = logging.getLogger('main')
-logging.basicConfig(format='%(name)s:%(levelname)s:%(message)s', stream=sys.stderr ,level = logging.DEBUG)
+logging.basicConfig(format='%(name)s:%(levelname)s:%(message)s', stream=sys.stderr ,level = logging.INFO)
 
 
 
@@ -140,14 +140,19 @@ def extract_data(wfs):
                   'expl_celi', 'expl_gravj', 'zkat', 'mt', 'izc', 'p_darbg', 'p_darbv',
                   'p_cirg', 'p_cirp', 'atj_gads']
     
-    for row in rows:
+    for idx, row in enumerate(rows):
+        doc_name = '_'.join(str(i) for i in row)
+
+        logger.info(f'File {idx} from {len(rows)}: generating...')
+
         filter = filter_gen.generate_filter(row[0], row[1], row[2])
         
         feature = wfs.getfeature(typename = [layer_name],
                                  maxfeatures = 10,
                                  #propertyname=['kadastrs', 'kvart'],
                                  filter = filter,
-                                 outputFormat = 'application/json')
+                                 outputFormat = 'application/json',
+                                 )
 
         res = json.loads(feature.read())
         if(not(res['numberMatched'] == 1 and res['numberReturned'] == 1)):
@@ -156,8 +161,6 @@ def extract_data(wfs):
                          f'Returned {res["numberMatched"]} instances.'\
                          f'Check input data to generate files. Skipping input for now...')
             continue
-
-        doc_name = '_'.join(str(i) for i in row)
 
         # Generate folder for each disctrict
         current_path = os.getcwd()
@@ -182,19 +185,28 @@ def extract_data(wfs):
             for i in list_of_properties:
                 prop = getattr(Properties, i)
                 outfile.write(prop.long_name + str(': '))
-                outfile.write(str(properties[i]))
+                if (not i in properties):
+                    logger.warning(f'Could not find "{i}" properties in WFS response!')
+                else:
+                    outfile.write(str(properties[i]))
                 outfile.write('\n')
+        
+        # Generate KML file
+        feature = wfs.getfeature(typename = [layer_name],
+                                 maxfeatures = 10,
+                                 #propertyname=['kadastrs', 'kvart'],
+                                 filter = filter,
+                                 outputFormat = 'KML',
+                                 )
+
+        res = feature.read()
+
+        with open(doc_name+'/'+doc_name+'.kml', 'w', encoding='utf-8') as outfile:
+            outfile.write(res.decode())
+        
+        logger.info(f'File {idx} from {len(rows)}: generating finished')
             
 
 
 if __name__ == '__main__':
     main(sys.argv)
-
-    # properties = ['ogc_fid', 'kadastrs', 'kvart', 'nog', 'anog', 'nog_plat', 'expl_mezs',
-    #               'expl_celi', 'expl_gravj', 'zkat', 'mt', 'izc', 'p_darbg', 'p_darbv',
-    #               'p_cirg', 'p_cirp', 'atj_gads']
-    
-    # for i in properties:
-    #     prop = getattr(Properties, i)
-    #     print(prop.long_name)
-    #     print(prop.coded_value)
