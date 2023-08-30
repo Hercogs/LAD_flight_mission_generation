@@ -8,7 +8,6 @@ import os, sys
 import logging
 import getopt
 
-import numpy as np
 import json
 import csv
 import owslib.wfs
@@ -141,14 +140,19 @@ def extract_data(wfs):
                   'expl_celi', 'expl_gravj', 'zkat', 'mt', 'izc', 'p_darbg', 'p_darbv',
                   'p_cirg', 'p_cirp', 'atj_gads']
     
-    for row in rows:
+    for idx, row in enumerate(rows):
+        doc_name = '_'.join(str(i) for i in row)
+
+        logger.info(f'File {idx} from {len(rows)}: generating...')
+
         filter = filter_gen.generate_filter(row[0], row[1], row[2])
         
         feature = wfs.getfeature(typename = [layer_name],
                                  maxfeatures = 10,
                                  #propertyname=['kadastrs', 'kvart'],
                                  filter = filter,
-                                 outputFormat = 'application/json')
+                                 outputFormat = 'application/json',
+                                 )
 
         res = json.loads(feature.read())
         if(not(res['numberMatched'] == 1 and res['numberReturned'] == 1)):
@@ -157,8 +161,6 @@ def extract_data(wfs):
                          f'Returned {res["numberMatched"]} instances.'\
                          f'Check input data to generate files. Skipping input for now...')
             continue
-
-        doc_name = '_'.join(str(i) for i in row)
 
         # Generate folder for each disctrict
         current_path = os.getcwd()
@@ -176,13 +178,6 @@ def extract_data(wfs):
         with open(doc_name+'/'+doc_name+'_coordinates.txt', 'w') as outfile:
             outfile.write(str(res['features'][0]['geometry']))
         
-        arr = np.array(res['features'][0]['geometry']['coordinates'])
-        print(f'Array size: {arr.data}')
-        print(f'Array size: {arr.shape}')
-        print(f'Array size: {arr.shape[0]}')
-        arr = arr.reshape(7, 2)
-        print(arr[:2])
-        
         # Extract metadata info
         properties = res['features'][0]['properties']
 
@@ -195,6 +190,21 @@ def extract_data(wfs):
                 else:
                     outfile.write(str(properties[i]))
                 outfile.write('\n')
+        
+        # Generate KML file
+        feature = wfs.getfeature(typename = [layer_name],
+                                 maxfeatures = 10,
+                                 #propertyname=['kadastrs', 'kvart'],
+                                 filter = filter,
+                                 outputFormat = 'KML',
+                                 )
+
+        res = feature.read()
+
+        with open(doc_name+'/'+doc_name+'.kml', 'w', encoding='utf-8') as outfile:
+            outfile.write(res.decode())
+        
+        logger.info(f'File {idx} from {len(rows)}: generating finished')
             
 
 
