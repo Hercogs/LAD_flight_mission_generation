@@ -164,12 +164,18 @@ def extract_data(wfs):
 
         # Generate folder for each disctrict
         current_path = os.getcwd()
-        path = os.path.join(current_path, doc_name)
+        path = os.path.join(current_path, "kml_files")
         try:
             os.mkdir(path)
         except OSError as error:
             logger.error(error)
-        
+        path = os.path.join(path, doc_name)
+        try:
+            os.mkdir(path)
+        except OSError as error:
+            logger.error(error)
+
+            
         logger.debug(res)
         assert len(res['features']) == 1
 
